@@ -14,7 +14,7 @@ def saveUserData():
 # Format milliseconds to minutes:seconds (used for track-length)
 def msConvert(ms):
     ms = int(ms)
-    seconds=int(ms/1000)
+    seconds = ms // 1000
     return time.strftime('%M:%S', time.gmtime(seconds))
 
 
@@ -51,7 +51,7 @@ def authorised(update):
 # Download the users uploaded file
 def fileDownload(update, context):
     file_id = None
-    while file_id == None:
+    while file_id is None:
         # Get the file-id
         try:
             file_id = update.effective_message.audio.file_id
@@ -72,12 +72,12 @@ def fileDownload(update, context):
             file_id = update.effective_message.voice.file_id
             break
         except:
-            logbotsend(update, context, f'⚠️ Sorry, we don\'t support that filetype.')
+            logbotsend(update, context, "⚠️ Sorry, we don't support that filetype.")
         break
     try:
         file_info = context.bot.get_file(file_id)
         file_size = file_info["file_size"]
-        if 20000000 - int(file_size) >= 0:
+        if int(file_size) <= 20000000:
             web_path = file_info["file_path"]  # Get the original filename
             extension = os.path.splitext(f'{web_path}')[1]  # Get the file extension (.mp3, .mp4 etc)
             fileName = f'{update.effective_chat.id}_{update.effective_message.message_id}_{file_id}{extension}'
@@ -85,7 +85,12 @@ def fileDownload(update, context):
             newFile.download(f'{downloadDIR}/{fileName}')
             return fileName
     except:
-        botsend(update, context, f'⚠️ Sorry, your file is too big for us to process.\nFile size limit: 20MB')
+        botsend(
+            update,
+            context,
+            '⚠️ Sorry, your file is too big for us to process.\nFile size limit: 20MB',
+        )
+
         logbot(update, '*Sent file-size limit error*')
         return 'FILE_TOO_BIG'
 
@@ -155,14 +160,15 @@ def dataProcess(update, context, data):
         elif score >= 70:
             response = f'Possible Match: <b>{score}%</b>'
         else:
-            response = f'Unlikely Match\n<i>We\'re unsure what your song is, but it may be this</i>'
+            response = "Unlikely Match\n<i>We're unsure what your song is, but it may be this</i>"
+
         response += f'\n\n<b>{artist}</b> - <b>{title}</b>\n'
         if album != None:
             response += f'\nAlbum: {album}'
         response += f'\nLength: {duration}'
         if release_date != None:
             response += f'\nRelease date: {release_date}'
-        response += f'\n'
+        response += '\n'
         if youtube != None:
             response += f'\nYouTube: {youtube}'
         if spotify != None:
@@ -229,7 +235,7 @@ class SIDProcessor():
     # If authorised, download the users uploaded file and send it to the API response processor, and then delete the downloaded file from disk
     def fileProcess(update, context, processor):
         logusr(update)
-        for attempt in range(0,10):
+        for _ in range(10):
             try:
                 logger.info('fileProcess: Attempting to send ChatAction.TYPING')
                 context.bot.sendChatAction(chat_id=update.effective_chat.id, action=telegram.ChatAction.TYPING, timeout=10)
@@ -276,30 +282,28 @@ class SIDProcessor():
         split = command.split(' ')  # Split the message with each space
         if len(split) < 3:
             return None
-        if len(split) >= 3:
-            key = split[1]
-            while key == "":  # If the user used irregular spacing
-                keysplit+=1
-                whitespace.append(keysplit-1)
-                key = split[keysplit]
+        key = split[1]
+        while key == "":  # If the user used irregular spacing
+            keysplit+=1
+            whitespace.append(keysplit-1)
+            key = split[keysplit]
 
-            message = command
-            for space in whitespace:
-                message = message.replace(split[space], '', 1)
-            message = message.replace(split[0]+' ', '', 1)
-            message = message.replace(split[keysplit]+' ', '', 1)
+        message = command
+        for space in whitespace:
+            message = message.replace(split[space], '', 1)
+        message = message.replace(split[0]+' ', '', 1)
+        message = message.replace(split[keysplit]+' ', '', 1)
 
-            if len(message) > 5000:
-                return ['too_long', len(message)-5000]
-            return [key, message]
+        if len(message) > 5000:
+            return ['too_long', len(message)-5000]
+        return [key, message]
 
 
     # Find the parent key(s) within a dictionary
     def find_key(d, value):  # https://stackoverflow.com/a/15210253
         for k,v in d.items():
             if isinstance(v, dict):
-                p = SIDProcessor.find_key(v, value)
-                if p:
+                if p := SIDProcessor.find_key(v, value):
                     return [k] + p
             elif v == value:
                 return [k]

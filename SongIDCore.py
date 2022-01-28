@@ -4,9 +4,9 @@ import sentry_sdk
 
 
 ver='0.2.3'
-botName=f'SongID'
+botName = 'SongID'
 botVer=f'{botName} {ver}'
-botAt=f'@SongIDBot'
+botAt = '@SongIDBot'
 botUsername='SongIDbot'
 downloadDIR='data/downloads'
 
